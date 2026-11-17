@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Omkar Loyalty Coupons</title>
+
+<style>
+  :root{--ink:#1b2a4a;--hl:#ffd23f;--bg:#f6f4ee;--card:#fff;--muted:#6b7280;--ok:#16a34a;--line:#e5e1d6}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--ink)}
+  header{background:var(--ink);color:#fff;padding:22px 16px 26px;text-align:center}
+  header h1{margin:0;font-size:22px}
+  header p{margin:6px 0 0;color:#cbd5e1;font-size:14px}
+  main{max-width:900px;margin:0 auto;padding:16px}
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:-18px}
+  .stat{background:var(--card);border-radius:12px;padding:12px;text-align:center;box-shadow:0 2px 8px #0001}
+  .stat b{display:block;font-size:24px}
+  .stat span{font-size:12px;color:var(--muted)}
+  .how{background:#fff8d6;border:1px solid #f1e3a0;border-radius:12px;padding:12px 14px;margin:16px 0;font-size:14px}
+  .mine{background:var(--card);border:2px dashed var(--hl);border-radius:12px;padding:12px;margin-bottom:16px}
+  .mine input,.tools input{padding:10px;border:1px solid var(--line);border-radius:8px;font-size:15px;width:100%;text-transform:uppercase}
+  .tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+  .tools input{flex:1;min-width:160px}
+  .chip{border:1px solid var(--line);background:#fff;padding:8px 14px;border-radius:99px;cursor:pointer;font-size:14px;color:var(--ink)}
+  .chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+  .card{background:var(--card);border-radius:14px;padding:14px;box-shadow:0 1px 6px #0001;position:relative;border:2px solid transparent}
+  .card.me{border-color:var(--hl)}
+  .card.dim{opacity:.6}
+  .code{font:700 18px ui-monospace,Menlo,monospace;letter-spacing:1px}
+  .rank{position:absolute;top:10px;right:12px;font-size:12px;background:var(--hl);padding:2px 8px;border-radius:99px;font-weight:700}
+  .dots{display:flex;flex-wrap:wrap;gap:5px;margin:10px 0 6px}
+  .dot{width:18px;height:18px;border-radius:50%;border:2px solid var(--line);background:#fff}
+  .dot.f{background:var(--hl);border-color:#e0b800}
+  .bar{height:10px;background:#eee;border-radius:99px;overflow:hidden;margin:10px 0 6px}
+  .bar i{display:block;height:100%;background:var(--hl)}
+  .row{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--muted)}
+  .badge{font-size:12px;font-weight:600;padding:3px 9px;border-radius:99px;background:#eef2ff;color:#3730a3}
+  .badge.REWARD_READY{background:#dcfce7;color:#166534}
+  .badge.REDEEMED{background:#e5e7eb;color:#374151}
+  .badge.EXPIRED{background:#fee2e2;color:#991b1b}
+  .empty{text-align:center;color:var(--muted);padding:30px 0}
+  footer{text-align:center;color:var(--muted);font-size:12px;padding:20px}
+</style>
+</head>
+<body>
+<header>
+  <h1 id="shop">Loyalty Coupons</h1>
+  <p id="sub">Loading…</p>
+</header>
+<main>
+  <div class="stats">
+    <div class="stat"><b id="sActive">–</b><span>Active coupons</span></div>
+    <div class="stat"><b id="sReady">–</b><span>Rewards ready</span></div>
+    <div class="stat"><b id="sDone">–</b><span>Redeemed</span></div>
+  </div>
+  <div class="how" id="how"></div>
+  <div class="mine">
+    <b>Find my coupon</b>
+    <input id="mine" placeholder="Enter your coupon code, e.g. OMK-AB12" maxlength="12" autocomplete="off">
+  </div>
+  <div class="tools">
+    <button class="chip on" data-f="active">Active</button>
+    <button class="chip" data-f="ready">Rewards ready</button>
+    <button class="chip" data-f="all">All</button>
+  </div>
+  <div class="grid" id="grid"></div>
+  <div class="empty" id="empty" hidden>No coupons to show here yet.</div>
+</main>
+<footer>Anonymous coupon codes only. Progress is updated by the shop. <span id="upd"></span></footer>
+
+<script>
+var DATA=null, FILTER='active', MINE='';
+try{MINE=localStorage.getItem('omk_mine')||''}catch(e){}
+document.getElementById('mine').value=MINE;
+
+function esc(s){return String(s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+var LABEL={IN_PROGRESS:'In progress',REWARD_READY:'Reward ready 🎉',REDEEMED:'Redeemed',EXPIRED:'Expired'};
+
+function load(){
+  fetch('data.json?t='+Date.now(),{cache:'no-store'}).then(function(r){if(!r.ok)throw new Error('x');return r.json()}).then(function(d){DATA=d;render()}).catch(function(){
+    document.getElementById('sub').textContent='Could not load coupon data right now. Please try again shortly.';
+  });
+}
+
+function render(){
+  var d=DATA; if(!d) return;
+  document.getElementById('shop').textContent=d.shop+' — Loyalty Coupons';
+  document.getElementById('sub').textContent='Buy '+d.required+' times, earn: '+d.rewardDescription;
+  document.getElementById('how').innerHTML='<b>How it works:</b> every qualifying purchase adds a stamp to your coupon. Collect '+d.required+' stamps to earn your reward. Your reward token is sent to you privately — never share it.';
+  document.getElementById('upd').textContent='Updated '+d.updatedAt+'.';
+  var cs=d.coupons;
+  document.getElementById('sActive').textContent=cs.filter(function(c){return c.status==='IN_PROGRESS'||c.status==='REWARD_READY'}).length;
+  document.getElementById('sReady').textContent=cs.filter(function(c){return c.status==='REWARD_READY'}).length;
+  document.getElementById('sDone').textContent=cs.filter(function(c){return c.status==='REDEEMED'}).length;
+
+  var order={REWARD_READY:0,IN_PROGRESS:1,REDEEMED:2,EXPIRED:3};
+  var list=cs.slice().sort(function(a,b){return order[a.status]-order[b.status]||b.count-a.count||a.code.localeCompare(b.code)});
+  var shown=list.filter(function(c){
+    if(FILTER==='active')return c.status==='IN_PROGRESS'||c.status==='REWARD_READY';
+    if(FILTER==='ready')return c.status==='REWARD_READY'||c.status==='REDEEMED';
+    return true;
+  });
+  // pin my coupon first
+  if(MINE){shown.sort(function(a,b){return (b.code===MINE)-(a.code===MINE)});
+    if(!shown.some(function(c){return c.code===MINE})){var m=list.filter(function(c){return c.code===MINE})[0]; if(m) shown.unshift(m);}}
+  var rank=0, html='';
+  list.forEach(function(c){ if(c.status==='IN_PROGRESS'&&c.count>0&&rank<3){c.rank=++rank} });
+  shown.forEach(function(c){
+    var vis;
+    if(d.required<=15){vis='<div class="dots">';for(var i=0;i<d.required;i++)vis+='<span class="dot'+(i<c.count?' f':'')+'"></span>';vis+='</div>'}
+    else vis='<div class="bar"><i style="width:'+Math.round(c.count/d.required*100)+'%"></i></div>';
+    html+='<div class="card'+(c.code===MINE?' me':'')+((c.status==='EXPIRED'||c.status==='REDEEMED')?' dim':'')+'">'+
+      (c.rank?'<span class="rank">🔥 #'+c.rank+'</span>':'')+
+      '<div class="code">'+esc(c.code)+'</div>'+vis+
+      '<div class="row"><span>'+c.count+' / '+d.required+' purchases</span><span class="badge '+c.status+'">'+LABEL[c.status]+'</span></div>'+
+      '<div class="row" style="margin-top:6px"><span>Valid till '+esc(c.validTill)+'</span></div></div>';
+  });
+  document.getElementById('grid').innerHTML=html;
+  document.getElementById('empty').hidden=shown.length>0;
+}
+
+document.getElementById('mine').addEventListener('input',function(e){
+  MINE=e.target.value.toUpperCase().replace(/\s/g,'');
+  try{localStorage.setItem('omk_mine',MINE)}catch(x){}
+  render();
+});
+document.querySelectorAll('.chip').forEach(function(b){b.addEventListener('click',function(){
+  document.querySelectorAll('.chip').forEach(function(x){x.classList.remove('on')});
+  b.classList.add('on'); FILTER=b.dataset.f; render();
+})});
+load(); setInterval(load,120000);
+</script>
+</body>
+</html>
