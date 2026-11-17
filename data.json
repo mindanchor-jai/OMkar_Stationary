@@ -2,11 +2,11 @@
  "shop": "Omkar Stationery",
  "required": 10,
  "rewardDescription": "Reward available at the counter",
- "updatedAt": "2026-11-17 20:13",
+ "updatedAt": "2026-11-17 20:22",
  "coupons": [
   {
    "code": "OMK-C9KU",
-   "count": 0,
+   "count": 1,
    "validTill": "2027-11-17",
    "status": "IN_PROGRESS"
   }
