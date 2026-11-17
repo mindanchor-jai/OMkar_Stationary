@@ -2,13 +2,6 @@
  "shop": "Omkar Stationery",
  "required": 10,
  "rewardDescription": "Reward available at the counter",
- "updatedAt": "2026-11-17 15:07",
- "coupons": [
-  {
-   "code": "OMK-Y6R3",
-   "count": 0,
-   "validTill": "2027-11-17",
-   "status": "IN_PROGRESS"
-  }
- ]
+ "updatedAt": "2026-11-17 20:11",
+ "coupons": []
 }
