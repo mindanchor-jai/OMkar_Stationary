@@ -2,13 +2,6 @@
  "shop": "Omkar Stationery",
  "required": 10,
  "rewardDescription": "Reward available at the counter",
- "updatedAt": "2026-11-17 14:37",
- "coupons": [
-  {
-   "code": "OMK-U464",
-   "count": 2,
-   "validTill": "2027-11-17",
-   "status": "IN_PROGRESS"
-  }
- ]
+ "updatedAt": "2026-11-17 14:38",
+ "coupons": []
 }
