@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Omkar Loyalty — Shop Admin</title>
+<style>
+  :root{--ink:#1b2a4a;--hl:#ffd23f;--bg:#f4f5f7;--line:#dfe3ea;--muted:#6b7280;--bad:#b91c1c}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--ink)}
+  header{background:var(--ink);color:#fff;padding:12px 16px}
+  header b{font-size:17px}
+  main{max-width:1000px;margin:0 auto;padding:14px}
+  .panel{background:#fff;border-radius:12px;padding:14px;box-shadow:0 1px 5px #0001;margin-bottom:14px}
+  h3{margin:0 0 10px}
+  input,button,select{font:inherit}
+  input{padding:10px;border:1px solid var(--line);border-radius:8px;width:100%}
+  button{padding:9px 14px;border:0;border-radius:8px;background:var(--ink);color:#fff;cursor:pointer}
+  button.sec{background:#e8ebf1;color:var(--ink)}
+  button.hl{background:var(--hl);color:var(--ink);font-weight:700}
+  button.bad{background:#fde2e2;color:var(--bad)}
+  button:disabled{opacity:.5}
+  .banner{background:#fff3cd;border:1px solid #f1d98a;border-radius:12px;padding:10px 14px;margin-bottom:12px;display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;font-size:14px}
+  .banner.red{background:#fde2e2;border-color:#f3b4b4}
+  .tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+  .tab{background:#fff;color:var(--ink);border:1px solid var(--line)}
+  .tab.on{background:var(--ink);color:#fff}
+  .inline{display:flex;gap:8px;flex-wrap:wrap}
+  .inline input{flex:1;min-width:150px}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line);vertical-align:middle}
+  th{font-size:12px;color:var(--muted);text-transform:uppercase}
+  .mono{font-family:ui-monospace,Menlo,monospace;font-weight:700}
+  .tag{font-size:12px;padding:2px 8px;border-radius:99px;background:#eef2ff}
+  .tag.REWARD_READY,.tag.REWARD_ISSUED{background:#dcfce7;color:#166534}
+  .tag.REDEEMED{background:#e5e7eb}.tag.EXPIRED{background:#fee2e2;color:#991b1b}
+  .acts{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+  .acts button{padding:6px 10px;font-size:13px}
+  label{font-size:13px;color:var(--muted);display:block;margin:8px 0 4px}
+  #toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:10px;display:none;max-width:90%;z-index:30}
+  #toast.err{background:var(--bad)}
+  #modal{position:fixed;inset:0;background:#0007;display:none;align-items:center;justify-content:center;padding:14px;z-index:20}
+  #modal .box{background:#fff;border-radius:14px;padding:18px;max-width:560px;width:100%;max-height:90vh;overflow:auto}
+  .big{font:700 28px ui-monospace,Menlo,monospace;letter-spacing:2px;background:#fff8d6;padding:12px;text-align:center;border-radius:10px;margin:10px 0}
+  .result{padding:12px;border-radius:10px;margin-top:12px}
+  .result.ok{background:#dcfce7}.result.no{background:#fee2e2}
+  .small{font-size:13px;color:var(--muted)}
+  ol{padding-left:20px;line-height:1.6}
+  @media(max-width:640px){.hide-s{display:none}}
+</style>
+</head>
+<body>
+<header><b id="shopName">Omkar Loyalty — Shop Admin</b></header>
+<main>
+  <div id="banner"></div>
+  <div class="tabs">
+    <button class="tab on" data-t="coupons">Coupons</button>
+    <button class="tab" data-t="issue">Issue coupon</button>
+    <button class="tab" data-t="redeem">Redeem reward</button>
+    <button class="tab" data-t="activity">Activity</button>
+    <button class="tab" data-t="data">Publish &amp; Backup</button>
+    <button class="tab" data-t="settings">Settings</button>
+  </div>
+
+  <section id="t-coupons">
+    <div class="panel">
+      <h3>Record a purchase</h3>
+      <div class="inline">
+        <input id="quickCode" placeholder="Coupon code, e.g. OMK-AB12" style="text-transform:uppercase">
+        <button class="hl" id="quickBtn">Record purchase</button>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="inline" style="margin-bottom:10px"><input id="search" placeholder="Search code, name or phone"></div>
+      <div style="overflow-x:auto"><table>
+        <thead><tr><th>Code</th><th>Customer</th><th>Progress</th><th>Status</th><th class="hide-s">Valid till</th><th></th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table></div>
+    </div>
+  </section>
+
+  <section id="t-issue" hidden>
+    <div class="panel" style="max-width:480px">
+      <h3>Register customer &amp; issue coupon</h3>
+      <label>Customer name</label><input id="iName">
+      <label>Mobile number (10 digits)</label><input id="iPhone" inputmode="numeric">
+      <p><button class="hl" id="issueBtn">Issue coupon</button></p>
+      <div id="issued"></div>
+    </div>
+  </section>
+
+  <section id="t-redeem" hidden>
+    <div class="panel" style="max-width:480px">
+      <h3>Verify &amp; redeem reward</h3>
+      <label>Coupon code</label><input id="rCode" style="text-transform:uppercase">
+      <label>Reward token</label><input id="rTok" style="text-transform:uppercase" placeholder="XXXXX-XXXXX">
+      <p><button id="verifyBtn">Verify</button></p>
+      <div id="rResult"></div>
+    </div>
+  </section>
+
+  <section id="t-activity" hidden><div class="panel"><h3>Recent activity</h3>
+    <div style="overflow-x:auto"><table><thead><tr><th>When</th><th>Action</th><th>Code</th><th>Details</th></tr></thead><tbody id="actRows"></tbody></table></div>
+  </div></section>
+
+  <section id="t-data" hidden>
+    <div class="panel">
+      <h3>1. Publish to the public page</h3>
+      <ol>
+        <li>Press <b>Download index.html</b> (contains only anonymous codes, counts and status).</li>
+        <li>On GitHub, open your repository, choose <b>Add file → Upload files</b>, and upload it with the same name <b>index.html</b> to replace the old one.</li>
+        <li>Commit. The public page updates within a minute or two.</li>
+      </ol>
+      <div class="acts"><button class="hl" id="pubBtn">Download index.html</button><button class="sec" id="prevBtn">Preview</button></div>
+      <p class="small" id="pubInfo"></p>
+    </div>
+    <div class="panel">
+      <h3>2. Backup &amp; restore</h3>
+      <p class="small">All customer data lives <b>only in this browser on this device</b>. Download a backup regularly (it contains names, phones and tokens — keep it private). Use it to restore or to move to another device.</p>
+      <div class="acts"><button onclick="downloadBackup()">Download backup (JSON)</button>
+        <label class="sec" style="display:inline-block;margin:0;padding:9px 14px;border-radius:8px;background:#e8ebf1;color:var(--ink);cursor:pointer">Restore backup<input id="restoreFile" type="file" accept=".json" hidden></label></div>
+      <p class="small" id="bkInfo"></p>
+    </div>
+    <div class="panel">
+      <h3>3. Export for Excel (CSV)</h3>
+      <div class="acts"><button onclick="exportCsv('coupons')">Coupons</button><button onclick="exportCsv('purchases')">Purchases</button><button onclick="exportCsv('rewards')">Rewards &amp; cost</button></div>
+    </div>
+    <div class="panel">
+      <h3>Erase all data</h3>
+      <p class="small">Use this to clear test entries before going live. This cannot be undone.</p>
+      <button class="bad" onclick="eraseAll()">Erase everything</button>
+    </div>
+  </section>
+
+  <section id="t-settings" hidden><div class="panel" style="max-width:520px">
+    <h3>Settings</h3>
+    <label>Shop name</label><input id="cShop">
+    <label>Purchases needed for a reward</label><input id="cReq" type="number" min="1">
+    <label>Reward description (shown to customers)</label><input id="cDesc">
+    <label>Cost to shop per reward (for reporting)</label><input id="cCost" type="number" min="0">
+    <label>Coupon validity (months)</label><input id="cMonths" type="number" min="1">
+    <label>Coupon code prefix</label><input id="cPrefix" maxlength="6" style="text-transform:uppercase">
+    <p class="small">Changing the purchase target applies to all existing coupons.</p>
+    <p><button class="hl" id="saveCfg">Save settings</button></p>
+  </div></section>
+</main>
+
+<div id="modal"><div class="box" id="modalBox"></div></div>
+<div id="toast"></div>
+
+<script>
+/* ===================== Data store (this browser only) ===================== */
+var PUBLIC_TEMPLATE="<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n<title>Omkar Loyalty Coupons<\/title>\n\n<style>\n  :root{--ink:#1b2a4a;--hl:#ffd23f;--bg:#f6f4ee;--card:#fff;--muted:#6b7280;--ok:#16a34a;--line:#e5e1d6}\n  *{box-sizing:border-box}\n  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--ink)}\n  header{background:var(--ink);color:#fff;padding:22px 16px 26px;text-align:center}\n  header h1{margin:0;font-size:22px}\n  header p{margin:6px 0 0;color:#cbd5e1;font-size:14px}\n  main{max-width:900px;margin:0 auto;padding:16px}\n  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:-18px}\n  .stat{background:var(--card);border-radius:12px;padding:12px;text-align:center;box-shadow:0 2px 8px #0001}\n  .stat b{display:block;font-size:24px}\n  .stat span{font-size:12px;color:var(--muted)}\n  .how{background:#fff8d6;border:1px solid #f1e3a0;border-radius:12px;padding:12px 14px;margin:16px 0;font-size:14px}\n  .mine{background:var(--card);border:2px dashed var(--hl);border-radius:12px;padding:12px;margin-bottom:16px}\n  .mine input,.tools input{padding:10px;border:1px solid var(--line);border-radius:8px;font-size:15px;width:100%;text-transform:uppercase}\n  .tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}\n  .tools input{flex:1;min-width:160px}\n  .chip{border:1px solid var(--line);background:#fff;padding:8px 14px;border-radius:99px;cursor:pointer;font-size:14px;color:var(--ink)}\n  .chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}\n  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}\n  .card{background:var(--card);border-radius:14px;padding:14px;box-shadow:0 1px 6px #0001;position:relative;border:2px solid transparent}\n  .card.me{border-color:var(--hl)}\n  .card.dim{opacity:.6}\n  .code{font:700 18px ui-monospace,Menlo,monospace;letter-spacing:1px}\n  .rank{position:absolute;top:10px;right:12px;font-size:12px;background:var(--hl);padding:2px 8px;border-radius:99px;font-weight:700}\n  .dots{display:flex;flex-wrap:wrap;gap:5px;margin:10px 0 6px}\n  .dot{width:18px;height:18px;border-radius:50%;border:2px solid var(--line);background:#fff}\n  .dot.f{background:var(--hl);border-color:#e0b800}\n  .bar{height:10px;background:#eee;border-radius:99px;overflow:hidden;margin:10px 0 6px}\n  .bar i{display:block;height:100%;background:var(--hl)}\n  .row{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--muted)}\n  .badge{font-size:12px;font-weight:600;padding:3px 9px;border-radius:99px;background:#eef2ff;color:#3730a3}\n  .badge.REWARD_READY{background:#dcfce7;color:#166534}\n  .badge.REDEEMED{background:#e5e7eb;color:#374151}\n  .badge.EXPIRED{background:#fee2e2;color:#991b1b}\n  .empty{text-align:center;color:var(--muted);padding:30px 0}\n  footer{text-align:center;color:var(--muted);font-size:12px;padding:20px}\n<\/style>\n<\/head>\n<body>\n<header>\n  <h1 id=\"shop\">Loyalty Coupons<\/h1>\n  <p id=\"sub\">Loading\u2026<\/p>\n<\/header>\n<main>\n  <div class=\"stats\">\n    <div class=\"stat\"><b id=\"sActive\">\u2013<\/b><span>Active coupons<\/span><\/div>\n    <div class=\"stat\"><b id=\"sReady\">\u2013<\/b><span>Rewards ready<\/span><\/div>\n    <div class=\"stat\"><b id=\"sDone\">\u2013<\/b><span>Redeemed<\/span><\/div>\n  <\/div>\n  <div class=\"how\" id=\"how\"><\/div>\n  <div class=\"mine\">\n    <b>Find my coupon<\/b>\n    <input id=\"mine\" placeholder=\"Enter your coupon code, e.g. OMK-AB12\" maxlength=\"12\" autocomplete=\"off\">\n  <\/div>\n  <div class=\"tools\">\n    <button class=\"chip on\" data-f=\"active\">Active<\/button>\n    <button class=\"chip\" data-f=\"ready\">Rewards ready<\/button>\n    <button class=\"chip\" data-f=\"all\">All<\/button>\n  <\/div>\n  <div class=\"grid\" id=\"grid\"><\/div>\n  <div class=\"empty\" id=\"empty\" hidden>No coupons to show here yet.<\/div>\n<\/main>\n<footer>Anonymous coupon codes only. Progress is updated by the shop. <span id=\"upd\"><\/span><\/footer>\n\n<script>\nvar DATA=__OMK_DATA__, FILTER='active', MINE='';\ntry{MINE=localStorage.getItem('omk_mine')||''}catch(e){}\ndocument.getElementById('mine').value=MINE;\n\nfunction esc(s){return String(s).replace(/[&<>\"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',\"'\":'&#39;'}[c]})}\nvar LABEL={IN_PROGRESS:'In progress',REWARD_READY:'Reward ready \ud83c\udf89',REDEEMED:'Redeemed',EXPIRED:'Expired'};\n\nfunction render(){\n  var d=DATA; if(!d) return;\n  document.getElementById('shop').textContent=d.shop+' \u2014 Loyalty Coupons';\n  document.getElementById('sub').textContent='Buy '+d.required+' times, earn: '+d.rewardDescription;\n  document.getElementById('how').innerHTML='<b>How it works:<\/b> every qualifying purchase adds a stamp to your coupon. Collect '+d.required+' stamps to earn your reward. Your reward token is sent to you privately \u2014 never share it.';\n  document.getElementById('upd').textContent='Updated '+d.updatedAt+'.';\n  var cs=d.coupons;\n  document.getElementById('sActive').textContent=cs.filter(function(c){return c.status==='IN_PROGRESS'||c.status==='REWARD_READY'}).length;\n  document.getElementById('sReady').textContent=cs.filter(function(c){return c.status==='REWARD_READY'}).length;\n  document.getElementById('sDone').textContent=cs.filter(function(c){return c.status==='REDEEMED'}).length;\n\n  var order={REWARD_READY:0,IN_PROGRESS:1,REDEEMED:2,EXPIRED:3};\n  var list=cs.slice().sort(function(a,b){return order[a.status]-order[b.status]||b.count-a.count||a.code.localeCompare(b.code)});\n  var shown=list.filter(function(c){\n    if(FILTER==='active')return c.status==='IN_PROGRESS'||c.status==='REWARD_READY';\n    if(FILTER==='ready')return c.status==='REWARD_READY'||c.status==='REDEEMED';\n    return true;\n  });\n  // pin my coupon first\n  if(MINE){shown.sort(function(a,b){return (b.code===MINE)-(a.code===MINE)});\n    if(!shown.some(function(c){return c.code===MINE})){var m=list.filter(function(c){return c.code===MINE})[0]; if(m) shown.unshift(m);}}\n  var rank=0, html='';\n  list.forEach(function(c){ if(c.status==='IN_PROGRESS'&&c.count>0&&rank<3){c.rank=++rank} });\n  shown.forEach(function(c){\n    var vis;\n    if(d.required<=15){vis='<div class=\"dots\">';for(var i=0;i<d.required;i++)vis+='<span class=\"dot'+(i<c.count?' f':'')+'\"><\/span>';vis+='<\/div>'}\n    else vis='<div class=\"bar\"><i style=\"width:'+Math.round(c.count/d.required*100)+'%\"><\/i><\/div>';\n    html+='<div class=\"card'+(c.code===MINE?' me':'')+((c.status==='EXPIRED'||c.status==='REDEEMED')?' dim':'')+'\">'+\n      (c.rank?'<span class=\"rank\">\ud83d\udd25 #'+c.rank+'<\/span>':'')+\n      '<div class=\"code\">'+esc(c.code)+'<\/div>'+vis+\n      '<div class=\"row\"><span>'+c.count+' / '+d.required+' purchases<\/span><span class=\"badge '+c.status+'\">'+LABEL[c.status]+'<\/span><\/div>'+\n      '<div class=\"row\" style=\"margin-top:6px\"><span>Valid till '+esc(c.validTill)+'<\/span><\/div><\/div>';\n  });\n  document.getElementById('grid').innerHTML=html;\n  document.getElementById('empty').hidden=shown.length>0;\n}\n\ndocument.getElementById('mine').addEventListener('input',function(e){\n  MINE=e.target.value.toUpperCase().replace(/\\s/g,'');\n  try{localStorage.setItem('omk_mine',MINE)}catch(x){}\n  render();\n});\ndocument.querySelectorAll('.chip').forEach(function(b){b.addEventListener('click',function(){\n  document.querySelectorAll('.chip').forEach(function(x){x.classList.remove('on')});\n  b.classList.add('on'); FILTER=b.dataset.f; render();\n})});\nrender();\n<\/script>\n<\/body>\n<\/html>\n";
+var KEY='omk_loyalty_v1';
+var DEF={config:{SHOP_NAME:'Omkar Stationery',REQUIRED_PURCHASES:10,REWARD_DESCRIPTION:'Reward available at the counter',REWARD_COST:0,VALID_MONTHS:12,CODE_PREFIX:'OMK'},
+  customers:[],purchases:[],rewards:[],log:[],meta:{dirty:false,lastPublished:'',lastBackup:''}};
+var ALPHABET='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+var DB=loadDB();
+
+function clone(o){return JSON.parse(JSON.stringify(o))}
+function loadDB(){
+  try{var s=localStorage.getItem(KEY);if(s){var d=JSON.parse(s);
+    d.config=Object.assign({},DEF.config,d.config);d.meta=Object.assign({},DEF.meta,d.meta);
+    ['customers','purchases','rewards','log'].forEach(function(k){d[k]=d[k]||[]});return d}}catch(e){}
+  return clone(DEF)}
+function saveDB(markDirty){
+  if(markDirty!==false)DB.meta.dirty=true;
+  try{localStorage.setItem(KEY,JSON.stringify(DB))}catch(e){alert('Could not save in this browser! Download a backup now.')}
+  if(typeof renderBanner==='function')renderBanner()}
+
+function p2(n){return (n<10?'0':'')+n}
+function ymd(d){return d.getFullYear()+'-'+p2(d.getMonth()+1)+'-'+p2(d.getDate())}
+function stamp(d){d=d||new Date();return ymd(d)+' '+p2(d.getHours())+':'+p2(d.getMinutes())}
+function uid(pre){return pre+rand(8)}
+function rand(n){var b=new Uint8Array(n);(window.crypto||window.msCrypto).getRandomValues(b);var s='';for(var i=0;i<n;i++)s+=ALPHABET.charAt(b[i]%32);return s}
+function normCode(c){return String(c||'').toUpperCase().replace(/\s+/g,'')}
+function normTok(t){return String(t||'').toUpperCase().replace(/[^A-Z0-9]/g,'')}
+function normPhone(p){var d=String(p||'').replace(/\D/g,'');if(d.length===12&&d.indexOf('91')===0)d=d.slice(2);if(d.length===11&&d.charAt(0)==='0')d=d.slice(1);return d}
+function logA(action,code,details){DB.log.push({at:stamp(),action:action,code:code||'',details:details||''})}
+function req(){return Math.max(1,Number(DB.config.REQUIRED_PURCHASES)||10)}
+
+function snap(){
+  var R=req(),t=ymd(new Date()),cnt={},rw={};
+  DB.purchases.forEach(function(p){if(!p.voided)cnt[p.code]=(cnt[p.code]||0)+1});
+  DB.rewards.forEach(function(r){if(r.status!=='Cancelled')rw[r.code]=r});
+  return DB.customers.map(function(c){
+    var n=cnt[c.code]||0,r=rw[c.code],s;
+    if(r&&r.status==='Redeemed')s='REDEEMED';
+    else if(c.validTill<t)s='EXPIRED';
+    else if(r&&r.status==='Active')s='REWARD_ISSUED';
+    else if(n>=R)s='REWARD_READY';
+    else s='IN_PROGRESS';
+    return {code:c.code,name:c.name,phone:c.phone,issuedOn:c.issuedOn,validTill:c.validTill,count:n,status:s};
+  });
+}
+function findC(code){code=normCode(code);var c=snap().filter(function(x){return x.code===code})[0];if(!c)throw new Error('Coupon '+code+' not found.');return c}
+
+/* ============================ Core operations ============================= */
+function coreIssue(name,phone){
+  name=String(name||'').trim();if(!name)throw new Error('Customer name is required.');
+  var ph=normPhone(phone);if(!/^\d{10}$/.test(ph))throw new Error('Enter a valid 10-digit mobile number.');
+  var list=snap();
+  var act=list.filter(function(c){return c.phone===ph&&['IN_PROGRESS','REWARD_READY','REWARD_ISSUED'].indexOf(c.status)>=0})[0];
+  if(act)throw new Error('This number already has an active coupon: '+act.code);
+  var used={};list.forEach(function(c){used[c.code]=1});
+  var code;do{code=(String(DB.config.CODE_PREFIX||'OMK').toUpperCase())+'-'+rand(4)}while(used[code]);
+  var now=new Date(),till=new Date(now.getTime());till.setMonth(till.getMonth()+(Number(DB.config.VALID_MONTHS)||12));
+  DB.customers.push({code:code,name:name,phone:ph,issuedOn:ymd(now),validTill:ymd(till)});
+  logA('ISSUE_COUPON',code,'Issued to '+name);saveDB();
+  return {code:code,name:name,phone:ph,issuedOn:ymd(now),validTill:ymd(till)};
+}
+function coreAdd(code,note){
+  var c=findC(code),R=req();
+  if(c.status==='EXPIRED')throw new Error(c.code+' expired on '+c.validTill+'.');
+  if(c.status==='REDEEMED')throw new Error(c.code+' is already redeemed. Issue a new coupon.');
+  if(c.count>=R)throw new Error(c.code+' has reached its target. Give or redeem the reward.');
+  var id=uid('P');DB.purchases.push({id:id,code:c.code,at:stamp(),note:String(note||''),voided:false,voidedAt:'',reason:''});
+  logA('ADD_PURCHASE',c.code,'Purchase '+id+' ('+(c.count+1)+'/'+R+')');saveDB();
+  return {code:c.code,name:c.name,count:c.count+1,required:R,completed:c.count+1>=R};
+}
+function coreVoid(id,reason){
+  reason=String(reason||'').trim();if(!reason)throw new Error('A reason is required to correct a purchase.');
+  var p=DB.purchases.filter(function(x){return x.id===id&&!x.voided})[0];if(!p)throw new Error('Purchase not found or already voided.');
+  var c=findC(p.code);
+  if(c.status==='REDEEMED'||c.status==='REWARD_ISSUED')throw new Error('A reward token exists for this coupon. Cancel the token first.');
+  p.voided=true;p.voidedAt=stamp();p.reason=reason;logA('VOID_PURCHASE',p.code,id+' voided: '+reason);saveDB();
+}
+function activeReward(code){return DB.rewards.filter(function(r){return r.code===code&&r.status==='Active'})[0]}
+function coreToken(code,reissue){
+  var c=findC(code),R=req();
+  if(c.status==='REDEEMED')throw new Error('Already redeemed.');
+  if(c.status==='EXPIRED')throw new Error('Coupon expired on '+c.validTill+'.');
+  if(c.count<R)throw new Error('Coupon is not complete yet ('+c.count+'/'+R+').');
+  var a=activeReward(c.code);
+  if(a&&!reissue)return {coupon:c,token:a.token,created:false};
+  if(a){a.status='Cancelled';logA('CANCEL_TOKEN',c.code,'Replaced by reissue')}
+  var t=rand(10),pretty=t.slice(0,5)+'-'+t.slice(5);
+  DB.rewards.push({id:uid('R'),code:c.code,token:pretty,generatedAt:stamp(),status:'Active',redeemedAt:'',cost:''});
+  logA('GENERATE_TOKEN',c.code,a?'Reissued':'First token');saveDB();
+  return {coupon:c,token:pretty,created:true};
+}
+function coreCancel(code,reason){
+  reason=String(reason||'').trim();if(!reason)throw new Error('A reason is required.');
+  var a=activeReward(normCode(code));if(!a)throw new Error('No active token for '+code+'.');
+  a.status='Cancelled';logA('CANCEL_TOKEN',a.code,reason);saveDB();
+}
+function coreVerify(code,tok){
+  code=normCode(code);var c=snap().filter(function(x){return x.code===code})[0];
+  if(!c)return {valid:false,reason:'Coupon code not found.'};
+  var t=normTok(tok);
+  var m=DB.rewards.filter(function(r){return r.code===code&&normTok(r.token)===t})[0];
+  if(!t||!m)return {valid:false,reason:'Token does not match this coupon.',customer:c};
+  if(m.status==='Redeemed')return {valid:false,reason:'ALREADY REDEEMED on '+m.redeemedAt+'.',customer:c};
+  if(m.status==='Cancelled')return {valid:false,reason:'This token was cancelled/replaced.',customer:c};
+  if(c.status==='EXPIRED')return {valid:false,reason:'Coupon expired on '+c.validTill+'.',customer:c};
+  return {valid:true,reason:'Valid. Reward can be redeemed.',customer:c,reward:m};
+}
+function coreRedeem(code,tok){
+  var r=coreVerify(code,tok);if(!r.valid)throw new Error(r.reason);
+  r.reward.status='Redeemed';r.reward.redeemedAt=stamp();r.reward.cost=Number(DB.config.REWARD_COST)||0;
+  logA('REDEEM',r.customer.code,'Reward redeemed for '+r.customer.name+' (cost '+r.reward.cost+')');saveDB();
+  return {code:r.customer.code,name:r.customer.name};
+}
+
+/* ============================ Publish & backup ============================ */
+function buildPublic(){
+  var data={shop:DB.config.SHOP_NAME,required:req(),rewardDescription:DB.config.REWARD_DESCRIPTION,updatedAt:stamp(),
+    coupons:snap().map(function(c){return {code:c.code,count:Math.min(c.count,req()),validTill:c.validTill,
+      status:c.status==='REWARD_ISSUED'?'REWARD_READY':c.status}})}; // anonymous fields only
+  var json=JSON.stringify(data).replace(/</g,'\\u003c');
+  return PUBLIC_TEMPLATE.replace('__OMK_DATA__',function(){return json});
+}
+function download(name,text,type){
+  var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type:type||'text/plain'}));
+  a.download=name;document.body.appendChild(a);a.click();setTimeout(function(){a.remove()},500)}
+function csvEsc(v){v=String(v==null?'':v);return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v}
+function toCsv(rows){return '﻿'+rows.map(function(r){return r.map(csvEsc).join(',')}).join('\n')}
+function csvFor(which){
+  if(which==='coupons')return [['Code','Name','Phone','IssuedOn','ValidTill','Purchases','Status']].concat(snap().map(function(c){return [c.code,c.name,c.phone,c.issuedOn,c.validTill,c.count,c.status]}));
+  if(which==='purchases')return [['PurchaseID','Code','RecordedAt','Note','Voided','VoidedAt','VoidReason']].concat(DB.purchases.map(function(p){return [p.id,p.code,p.at,p.note,p.voided?'Y':'',p.voidedAt,p.reason]}));
+  return [['RewardID','Code','GeneratedAt','Status','RedeemedAt','RewardCost']].concat(DB.rewards.map(function(r){return [r.id,r.code,r.generatedAt,r.status,r.redeemedAt,r.cost]}));
+}
+function exportCsv(w){download('omkar-loyalty-'+w+'-'+ymd(new Date())+'.csv',toCsv(csvFor(w)),'text/csv')}
+function downloadBackup(){download('omkar-loyalty-backup-'+ymd(new Date())+'.json',JSON.stringify(DB,null,1),'application/json');DB.meta.lastBackup=stamp();saveDB(false);renderData();toast('Backup downloaded. Store it safely.')}
+
+/* ================================== UI ==================================== */
+function $(i){return document.getElementById(i)}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+var tt;function toast(m,err){var t=$('toast');t.textContent=m;t.className=err?'err':'';t.style.display='block';clearTimeout(tt);tt=setTimeout(function(){t.style.display='none'},err?5000:2600)}
+function guard(fn){try{return fn()}catch(e){toast(e.message||String(e),true)}}
+function openModal(h){$('modalBox').innerHTML=h;$('modal').style.display='flex'}
+function closeModal(){$('modal').style.display='none'}
+$('modal').addEventListener('click',function(e){if(e.target===$('modal'))closeModal()});
+
+var LBL={IN_PROGRESS:'In progress',REWARD_READY:'Reward ready',REWARD_ISSUED:'Token issued',REDEEMED:'Redeemed',EXPIRED:'Expired'};
+
+function renderBanner(){
+  var h='',b=DB.meta;
+  if(b.dirty)h+='<div class="banner"><span><b>Public page is out of date.</b> Recent changes are not yet published.</span><button class="hl" onclick="goTab(\'data\')">Publish now</button></div>';
+  var old=!b.lastBackup||(Date.now()-new Date(b.lastBackup.replace(' ','T')).getTime())>7*864e5;
+  if(old&&(DB.customers.length||DB.purchases.length))h+='<div class="banner red"><span><b>No recent backup.</b> Data is stored only in this browser.</span><button onclick="downloadBackup()">Back up now</button></div>';
+  $('banner').innerHTML=h;
+}
+function goTab(t){document.querySelector('.tab[data-t="'+t+'"]').click()}
+document.querySelectorAll('.tab').forEach(function(b){b.onclick=function(){
+  document.querySelectorAll('.tab').forEach(function(x){x.classList.remove('on')});b.classList.add('on');
+  ['coupons','issue','redeem','activity','data','settings'].forEach(function(t){$('t-'+t).hidden=(t!==b.dataset.t)});
+  if(b.dataset.t==='coupons')renderRows();if(b.dataset.t==='activity')renderActivity();if(b.dataset.t==='data')renderData();if(b.dataset.t==='settings')renderSettings();}});
+
+function renderRows(){
+  $('shopName').textContent=DB.config.SHOP_NAME+' — Shop Admin';
+  var q=$('search').value.trim().toLowerCase(),R=req(),h='';
+  snap().reverse().filter(function(c){return !q||(c.code+c.name+c.phone).toLowerCase().indexOf(q)>=0}).forEach(function(c){
+    h+='<tr><td class="mono">'+esc(c.code)+'</td><td>'+esc(c.name)+'<div class="small">'+esc(c.phone)+'</div></td>'+
+    '<td>'+c.count+' / '+R+'</td><td><span class="tag '+c.status+'">'+LBL[c.status]+'</span></td>'+
+    '<td class="hide-s">'+esc(c.validTill)+'</td><td><div class="acts">'+
+    (c.status==='IN_PROGRESS'?'<button class="hl" onclick="addUI(\''+c.code+'\')">+1</button>':'')+
+    ((c.status==='REWARD_READY'||c.status==='REWARD_ISSUED')?'<button onclick="tokenUI(\''+c.code+'\')">'+(c.status==='REWARD_ISSUED'?'Show token':'Get token')+'</button>':'')+
+    '<button class="sec" onclick="historyUI(\''+c.code+'\')">History</button></div></td></tr>';});
+  $('rows').innerHTML=h||'<tr><td colspan="6" class="small">No coupons yet. Use "Issue coupon" to add the first one.</td></tr>';
+  renderBanner();
+}
+$('search').addEventListener('input',renderRows);
+
+function afterAdd(r){toast(r.code+' ('+r.name+'): '+r.count+'/'+r.required+(r.completed?' — REWARD EARNED! 🎉':''));renderRows();if(r.completed)tokenUI(r.code)}
+function addUI(code){var c=findC(code);if(!confirm('Record a purchase for '+code+' ('+c.name+')?'))return;guard(function(){afterAdd(coreAdd(code,''))})}
+$('quickBtn').onclick=function(){var code=$('quickCode').value.trim();if(!code)return;guard(function(){var r=coreAdd(code,'');$('quickCode').value='';afterAdd(r)})};
+$('quickCode').addEventListener('keydown',function(e){if(e.key==='Enter')$('quickBtn').click()});
+
+function tokenUI(code,reissue){guard(function(){
+  var r=coreToken(code,reissue),c=r.coupon,cfg=DB.config;
+  var msg='Hello '+c.name+'! You have completed your '+cfg.SHOP_NAME+' loyalty coupon '+c.code+'. Reward: '+cfg.REWARD_DESCRIPTION+'. Your private reward token: '+r.token+'. Show this code and token at the shop before '+c.validTill+'. Please do not share the token.';
+  var wa='https://wa.me/91'+c.phone+'?text='+encodeURIComponent(msg);
+  openModal('<h3>Reward token for '+esc(c.code)+'</h3><p>'+esc(c.name)+' · '+esc(c.phone)+'</p><div class="big">'+esc(r.token)+'</div>'+
+    '<p class="small">Send this privately to the customer. Do not post it publicly.</p>'+
+    '<div class="acts"><a href="'+wa+'" target="_blank" rel="noopener"><button class="hl" type="button">Send via WhatsApp</button></a>'+
+    '<button class="sec" onclick="navigator.clipboard&&navigator.clipboard.writeText(\''+r.token+'\');toast(\'Copied\')">Copy token</button>'+
+    '<button class="bad" onclick="if(confirm(\'Cancel this token and issue a new one?\'))tokenUI(\''+c.code+'\',true)">Reissue</button>'+
+    '<button class="sec" onclick="closeModal()">Close</button></div>');renderRows();})}
+
+function historyUI(code){guard(function(){
+  var c=findC(code),b='<h3>'+esc(c.code)+' — '+esc(c.name)+'</h3><p class="small">Issued '+esc(c.issuedOn)+' · valid till '+esc(c.validTill)+'</p><table><thead><tr><th>#</th><th>When</th><th></th></tr></thead><tbody>',n=0;
+  var ps=DB.purchases.filter(function(p){return p.code===c.code});
+  ps.forEach(function(p){b+='<tr><td>'+(p.voided?'–':++n)+'</td><td'+(p.voided?' style="text-decoration:line-through;color:#999"':'')+'>'+esc(p.at)+(p.voided?'<div class="small">Voided: '+esc(p.reason)+'</div>':'')+'</td><td>'+(p.voided?'':'<button class="bad" onclick="voidUI(\''+p.id+'\',\''+c.code+'\')">Void</button>')+'</td></tr>'});
+  if(!ps.length)b+='<tr><td colspan="3" class="small">No purchases yet.</td></tr>';
+  b+='</tbody></table>';
+  var rs=DB.rewards.filter(function(r){return r.code===c.code});
+  if(rs.length){b+='<h4>Rewards</h4>';rs.forEach(function(r){b+='<div class="small">'+esc(r.generatedAt)+' — '+esc(r.status)+(r.redeemedAt?' ('+esc(r.redeemedAt)+')':'')+'</div>'});
+    if(c.status==='REWARD_ISSUED')b+='<p><button class="bad" onclick="cancelUI(\''+c.code+'\')">Cancel active token</button></p>'}
+  b+='<p><button class="sec" onclick="closeModal()">Close</button></p>';openModal(b)})}
+function voidUI(id,code){var r=prompt('Reason for voiding this purchase (required):');if(!r)return;guard(function(){coreVoid(id,r);toast('Purchase voided');historyUI(code);renderRows()})}
+function cancelUI(code){var r=prompt('Reason for cancelling the token (required):');if(!r)return;guard(function(){coreCancel(code,r);toast('Token cancelled');closeModal();renderRows()})}
+
+$('issueBtn').onclick=function(){guard(function(){
+  var r=coreIssue($('iName').value,$('iPhone').value);
+  $('issued').innerHTML='<div class="result ok"><div class="small">Coupon issued to '+esc(r.name)+'</div><div class="big">'+esc(r.code)+'</div><div class="small">Valid '+esc(r.issuedOn)+' → '+esc(r.validTill)+'</div></div>';
+  $('iName').value='';$('iPhone').value='';renderRows()})};
+
+$('verifyBtn').onclick=function(){guard(function(){
+  var code=$('rCode').value,tok=$('rTok').value,r=coreVerify(code,tok),c=r.customer;
+  $('rResult').innerHTML='<div class="result '+(r.valid?'ok':'no')+'"><b>'+esc(r.reason)+'</b>'+(c?'<div class="small">'+esc(c.code)+' · '+esc(c.name)+' · '+esc(c.phone)+'</div>':'')+
+    (r.valid?'<p><button class="hl" id="doRedeem">Mark as redeemed</button></p>':'')+'</div>';
+  if(r.valid)$('doRedeem').onclick=function(){guard(function(){
+    var x=coreRedeem(code,tok);$('rResult').innerHTML='<div class="result ok"><b>Redeemed ✔</b><div class="small">'+esc(x.code)+' · '+esc(x.name)+'</div></div>';
+    $('rCode').value='';$('rTok').value='';renderRows()})}})};
+
+function renderActivity(){
+  $('actRows').innerHTML=DB.log.slice(-150).reverse().map(function(x){return '<tr><td>'+esc(x.at)+'</td><td>'+esc(x.action)+'</td><td class="mono">'+esc(x.code)+'</td><td>'+esc(x.details)+'</td></tr>'}).join('')||'<tr><td colspan="4" class="small">Nothing yet.</td></tr>'}
+
+function renderData(){
+  $('pubInfo').textContent=DB.meta.lastPublished?'Last downloaded: '+DB.meta.lastPublished+(DB.meta.dirty?' — changes made since then.':' — up to date.'):'Not downloaded yet.';
+  $('bkInfo').textContent=DB.meta.lastBackup?'Last backup: '+DB.meta.lastBackup:'No backup yet.';
+}
+$('pubBtn').onclick=function(){download('index.html',buildPublic(),'text/html');DB.meta.dirty=false;DB.meta.lastPublished=stamp();saveDB(false);renderData();toast('index.html downloaded. Upload it to GitHub.')};
+$('prevBtn').onclick=function(){window.open(URL.createObjectURL(new Blob([buildPublic()],{type:'text/html'})),'_blank')};
+$('restoreFile').onchange=function(e){var f=e.target.files[0];if(!f)return;var fr=new FileReader();
+  fr.onload=function(){guard(function(){var d=JSON.parse(fr.result);
+    if(!d||!Array.isArray(d.customers)||!Array.isArray(d.purchases)||!Array.isArray(d.rewards))throw new Error('This does not look like a loyalty backup file.');
+    if(!confirm('Replace ALL current data with this backup ('+d.customers.length+' coupons)?'))return;
+    DB=d;DB.config=Object.assign({},DEF.config,DB.config);DB.meta=Object.assign({},DEF.meta,DB.meta);DB.log=DB.log||[];DB.meta.dirty=true;saveDB();renderRows();renderData();toast('Backup restored.')})};
+  fr.readAsText(f);e.target.value=''};
+function eraseAll(){var t=prompt('Type ERASE to delete all coupons, purchases and tokens from this browser:');if(t!=='ERASE')return;
+  var cfg=DB.config;DB=clone(DEF);DB.config=cfg;DB.meta.dirty=true;saveDB();renderRows();renderData();toast('All data erased.')}
+
+function renderSettings(){var c=DB.config;$('cShop').value=c.SHOP_NAME;$('cReq').value=c.REQUIRED_PURCHASES;$('cDesc').value=c.REWARD_DESCRIPTION;$('cCost').value=c.REWARD_COST;$('cMonths').value=c.VALID_MONTHS;$('cPrefix').value=c.CODE_PREFIX}
+$('saveCfg').onclick=function(){guard(function(){
+  var r=Number($('cReq').value),m=Number($('cMonths').value);
+  if(!(r>=1)||!(m>=1))throw new Error('Purchases and months must be 1 or more.');
+  var pre=$('cPrefix').value.trim().toUpperCase().replace(/[^A-Z0-9]/g,'');if(!pre)throw new Error('Prefix cannot be empty.');
+  DB.config={SHOP_NAME:$('cShop').value.trim()||DEF.config.SHOP_NAME,REQUIRED_PURCHASES:r,REWARD_DESCRIPTION:$('cDesc').value.trim(),REWARD_COST:Number($('cCost').value)||0,VALID_MONTHS:m,CODE_PREFIX:pre};
+  saveDB();renderRows();toast('Settings saved.')})};
+
+try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist()}catch(e){}
+renderRows();
+</script>
+</body>
+</html>
